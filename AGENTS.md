@@ -4,10 +4,11 @@
 
 This is a documentation-first repository for the Agent Decision Comments
 convention. `README.md` is the canonical specification: it defines the four
-directives, their format, scope, examples, and review workflow. `LICENSE`
-contains the MIT license. There are currently no source, test, generated, or
-asset directories. Keep new documentation at the repository root unless a
-larger collection clearly warrants a focused directory such as `examples/`.
+directives, their format, scope, examples, review workflow, and current version.
+`LICENSE` contains the MIT license. There are currently no source, test,
+generated, or asset directories. Keep new documentation at the repository root
+unless a larger collection clearly warrants a focused directory such as
+`examples/`.
 
 ## Build, Test, and Development Commands
 
@@ -49,5 +50,7 @@ Recent history uses a Conventional Commit-style subject (`chore: Initial
 version`); prefer concise imperative subjects such as `docs: clarify comment
 scope`. Keep each commit focused. Pull requests should explain the motivation,
 identify affected sections, and call out changes to directive semantics or
-examples. Link relevant issues when available. Screenshots are useful only
-when rendered Markdown layout changes materially.
+examples. For specification changes, state the intended Semantic Versioning
+impact; repository-only maintenance does not require a version bump. Link
+relevant issues when available. Screenshots are useful only when rendered
+Markdown layout changes materially.
