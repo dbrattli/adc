@@ -1,2 +1,364 @@
-# adc
-Agent Decision Comments
+# Agent Decision Comments
+
+> Preserve the why in agent-written, human-reviewed code.
+
+Agent Decision Comments are concise, structured annotations that keep durable
+engineering decisions beside the code they govern. They give human reviewers a
+clear statement of intent and let future coding agents inherit the constraints
+and context behind an implementation.
+
+They are source-level decision records: smaller and more local than an RFC or
+ADR, but written with the same goal of preserving rationale.
+
+Agent Decision Comments are not transcripts of an agent's private reasoning.
+They record only the engineering rationale that future contributors need.
+
+---
+
+## Quick start
+
+Reference this file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
+
+```text
+This repository uses Agent Decision Comments.
+See AGENT_DECISION_COMMENTS.md for the convention.
+
+Before modifying code, read all active Agent Decision Comments in the affected
+scope. Preserve them or update them explicitly. Add comments for non-obvious
+decisions, invariants, assumptions, and tradeoffs introduced by your change.
+```
+
+An Agent Decision Comment looks like this:
+
+```typescript
+/**
+ * decision: processes events on one consumer to preserve arrival order
+ * invariant: handlers observe events in enqueue order
+ * tradeoff: limits throughput to gain deterministic processing
+ */
+function processEvents(queue: EventQueue): void {
+  // ...
+}
+```
+
+The annotations use ordinary comments or docstrings. They require no runtime
+dependency and remain versioned with the code they describe.
+
+---
+
+## The vocabulary
+
+Agent Decision Comments define four labels:
+
+```text
+decision:    A deliberate choice and the reason for it.
+invariant:   A falsifiable property that the code must preserve.
+assumption:  An external belief that this code does not guarantee.
+tradeoff:    A cost accepted in exchange for a benefit.
+```
+
+Start with `decision:` and `invariant:`. Add `assumption:` or `tradeoff:` when
+they expose information that would otherwise be easy to miss.
+
+### `decision:`
+
+Records the selected approach and why it is appropriate here. It does not imply
+that every possible alternative was evaluated.
+
+```text
+decision: uses a fold instead of recursive descent to keep stack usage constant
+```
+
+### `invariant:`
+
+Records a property that must remain true across future changes. It should be
+specific enough for a reviewer to challenge and, where practical, for a test or
+tool to verify.
+
+```text
+invariant: blocks accumulate in reverse order and are reversed exactly once
+```
+
+### `assumption:`
+
+Records something outside the annotated code that is believed to be true but
+is not guaranteed by that code. Include the consequence when it is useful.
+
+```text
+assumption: upstream preserves source-line order — otherwise block positions are invalid
+```
+
+A caller obligation is a precondition, not an assumption. Express preconditions
+through types, contracts, validation, or the language's normal API documentation.
+
+### `tradeoff:`
+
+Records both the accepted cost and the resulting benefit.
+
+```text
+tradeoff: performs an O(n) copy per update to enable time-travel debugging
+```
+
+---
+
+## Format
+
+Use this general form:
+
+```text
+<label>: <statement> [— <reason or consequence>]
+```
+
+Follow these rules:
+
+- Write one directive per physical line.
+- Use present tense: `uses a fold`, not `was changed to use a fold`.
+- Keep directives concise and within the repository's normal line length when
+  practical.
+- Place directives in the nearest comment or docstring attached to the code
+  they govern.
+- State information that is not already evident from code, types, or tests.
+- Prefer specific and falsifiable statements over general claims.
+- Update the directive whenever its governed code or rationale changes.
+
+The em dash is a readability convention, not a required parser delimiter.
+
+### Good
+
+```fsharp
+(**
+decision: folds over the input to keep stack usage constant for files over 10k lines
+invariant: blocks accumulate in reverse order and are reversed exactly once at the end
+*)
+let parse (lines: string seq) : Document =
+    lines |> Seq.fold parseLine initial |> flushState |> _.Blocks |> List.rev
+```
+
+```python
+def process_events(queue):
+    """
+    decision: uses one consumer because event ordering is externally observable
+    invariant: the queue is drained before this function returns
+    tradeoff: limits throughput to preserve deterministic processing
+    """
+```
+
+```typescript
+/**
+ * decision: updates state immutably to support time-travel debugging
+ * invariant: state.version increases monotonically and never resets
+ * tradeoff: copies state on each update to retain previous versions
+ */
+function reducer(state: State, action: Action): State {
+  // ...
+}
+```
+
+### Bad
+
+```fsharp
+(** decision: uses a fold because it is better *)
+let parse lines = // ...
+```
+
+The decision is vague and cannot be meaningfully reviewed.
+
+```python
+# decision: loops over the events
+for event in events:
+    process(event)
+```
+
+The annotation merely repeats the code.
+
+---
+
+## When to write a comment
+
+Write or update an Agent Decision Comment when a change:
+
+- Chooses one meaningful algorithm, architecture, or data structure over another.
+- Introduces ordering, consistency, concurrency, or lifecycle constraints.
+- Establishes a boundary that future code must not accidentally cross.
+- Relies on an external condition that could prove false.
+- Accepts a known limitation in return for a concrete benefit.
+- Implements behavior that a competent reviewer would reasonably question.
+- Distills a relevant RFC or ADR decision at the point where it constrains code.
+
+Do not add a comment for:
+
+- Mechanics that are clear from the implementation.
+- Facts already enforced by the type system.
+- Trivial formatting, renaming, or mechanical refactoring.
+- Generic advice that does not constrain the annotated code.
+- Speculative reasoning that did not affect the implementation.
+- Every function merely for consistency.
+
+The goal is durable signal, not comment coverage.
+
+---
+
+## Scope
+
+Agent Decision Comments follow the structure of the source code:
+
+```text
+File
+  Module or namespace
+    Type
+      Function or method
+        Local block
+```
+
+A directive governs the construct it is attached to and its nested constructs.
+Before changing code, collect the active directives from the file level down to
+the specific site being modified.
+
+Language conventions determine attachment:
+
+- A file-level directive appears before the first declaration.
+- A documentation block immediately preceding a declaration governs that declaration.
+- A Python docstring governs its containing module, class, or function.
+- A local comment immediately preceding a block governs that block.
+
+Directives from enclosing scopes accumulate. A narrower directive may clarify
+or specialize a broader decision, but it does not silently cancel an invariant.
+If active directives conflict, surface the conflict before changing the code.
+
+### Explicit local departure
+
+When a local implementation departs from a broader decision, acknowledge the
+departure and contain its effects:
+
+```fsharp
+(**
+decision: uses immutable state by default so parser stages remain independently testable
+*)
+module Parser =
+
+    (**
+    decision: uses a mutable accumulator here despite the module default — profiling shows a 10x gain
+    invariant: mutation remains inside this function and never escapes to the caller
+    tradeoff: gives up local immutability to reduce allocation on the parsing hot path
+    *)
+    let parseHot (lines: string seq) : Block list =
+        // ...
+```
+
+---
+
+## Existing comments are active constraints
+
+Before modifying code, read the Agent Decision Comments already governing it.
+
+- Preserve an `invariant:` or change it explicitly.
+- Do not silently reverse a `decision:`.
+- Validate an `assumption:` when the change depends on it.
+- Reconsider a `tradeoff:` when its cost or benefit changes.
+
+Annotations are not immutable historical artifacts. They describe the current
+rationale. If a decision changes, update or remove the annotation in the same
+change and call out the reversal in the review summary.
+
+Leaving an obsolete directive in place is worse than removing it because it
+creates false confidence for reviewers and future agents.
+
+---
+
+## Relationship to RFCs and ADRs
+
+Agent Decision Comments complement full decision records; they do not replace
+them.
+
+Use an RFC or ADR when a decision:
+
+- Spans several systems or repositories.
+- Needs alternatives, consequences, status, ownership, or historical context.
+- Requires discussion and approval outside the code review.
+- Is important independently of a particular implementation site.
+
+Once accepted, project the durable consequence into the relevant source code:
+
+```typescript
+/**
+ * decision: stores monetary values as integer minor units — preserves ADR-004 rounding semantics
+ * invariant: persisted amounts never use binary floating-point representation
+ */
+```
+
+The full record preserves the discussion. The code-local comment preserves the
+constraint where an agent is most likely to encounter it.
+
+---
+
+## Review workflow
+
+Agent Decision Comments make intent reviewable before implementation details.
+A reviewer can:
+
+1. Read the active directives.
+2. Agree with or challenge each decision.
+3. Check that every invariant is upheld.
+4. Probe assumptions against their external context.
+5. Decide whether each tradeoff remains acceptable.
+6. Review the implementation and tests against that stated intent.
+
+The comments improve code review; they do not replace implementation review.
+
+For teams that want a strict review contract, add this policy to their agent
+instructions:
+
+```text
+A change that introduces a non-obvious engineering decision or constraint is
+incomplete until its Agent Decision Comments are present and consistent with
+the implementation. Reviewers evaluate the comments before reviewing the code.
+```
+
+---
+
+## Literate source files
+
+In literate files such as notebooks, Jupytext, or Fable.Literate documents, use
+the directives to crystallize the durable result of a longer explanation:
+
+```fsharp
+(**
+The parser accumulates blocks using a fold rather than building a recursive
+call stack. Production documents frequently exceed 5,000 lines, and the
+recursive prototype overflowed on larger inputs.
+
+decision: folds over input instead of recursing to keep stack usage constant
+invariant: stack depth remains O(1) regardless of input length
+*)
+```
+
+The prose explains the journey. The directives preserve the decision and its
+constraint for reviewers, tools, and future agents.
+
+---
+
+## The three layers
+
+```text
+Types      constrain data and interfaces
+Tests      check observable behaviour
+Comments   preserve decisions and constraints
+```
+
+All three describe different aspects of the system. Agent Decision Comments
+capture intent that implementation and tests often cannot express on their own.
+
+---
+
+## Ecosystem
+
+```text
+Conventional Commits    structure intent in change history
+Conventional Comments   structure intent in review feedback
+Agent Decision Comments structure intent in agent-written source code
+```
+
+Agent Decision Comments apply the same basic discipline—a small vocabulary,
+predictable form, and human-readable meaning—to the decisions embedded in
+source code.
+
