@@ -2,6 +2,9 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
+- Specification version: **0.1.0**
+- Canonical repository: <https://github.com/dbrattli/adc>
+
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
 engineering decisions beside the code they govern. They give human reviewers a
 clear statement of intent and let future coding agents inherit the constraints
@@ -17,13 +20,14 @@ engineering rationale that future contributors need.
 
 ## Quick start
 
-To adopt ADCs in another repository, copy this convention into that repository
-as `AGENT_DECISION_COMMENTS.md`. Then reference the local file from `AGENTS.md`,
-`CLAUDE.md`, or the equivalent:
+To adopt ADCs in another repository, copy the convention from a published
+release into that repository as `AGENT_DECISION_COMMENTS.md`. Then reference
+the local file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
 
 ```text
 This repository uses Agent Decision Comments.
-See AGENT_DECISION_COMMENTS.md for the convention.
+See AGENT_DECISION_COMMENTS.md for the locally adopted convention.
+Upstream releases: https://github.com/dbrattli/adc/releases
 
 Before modifying code, read all active Agent Decision Comments in the affected
 scope. Preserve them or update them explicitly. Add comments for non-obvious
@@ -33,6 +37,11 @@ decisions, invariants, assumptions, and tradeoffs introduced by your change.
 If you use another stable path, such as `docs/agent-decision-comments.md`, name
 that exact path in the instruction file. Prefer a descriptive filename over
 `ADC.md` so contributors and agents can discover the convention easily.
+
+Keep the local copy pinned to a release and update it through an ordinary code
+review. Do not use a moving branch such as `main` as the sole source of agent
+instructions; its contents can change without a corresponding repository
+change.
 
 An Agent Decision Comment looks like this:
 
@@ -344,6 +353,20 @@ def parse(lines):
 
 The prose explains the journey. The directives preserve the decision and its
 constraint for reviewers, tools, and future agents.
+
+---
+
+## Versioning
+
+The ADC specification follows Semantic Versioning. Patch releases clarify
+wording or examples without changing meaning. Minor releases add compatible
+directives or guidance. Major releases change existing directive semantics or
+adoption requirements.
+
+Version changes apply to the convention itself, not repository-only maintenance
+such as CI or contributor documentation. Each specification version is
+published as a GitHub release and `vX.Y.Z` tag so adopting repositories can
+trace and review updates.
 
 ---
 
