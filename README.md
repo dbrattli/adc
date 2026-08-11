@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.1.0**
+- Specification version: **0.1.1**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
@@ -201,6 +201,23 @@ function reducer(state: State, action: Action): State {
 ```
 
 The decision is vague and cannot be meaningfully reviewed.
+
+### Public APIs and generated documentation
+
+Public APIs may carry ADCs when their shape or semantics embody a non-obvious
+architectural choice. Use them selectively for decisions such as portability
+boundaries, lifecycle semantics, compatibility constraints, or intentional
+escape hatches.
+
+Anything callers must rely on remains stated in ordinary API documentation and,
+where practical, enforced by tests. An ADC explains why the contract or API
+shape was chosen; it does not replace consumer-facing documentation. If an
+`invariant:` describes a public guarantee, state that guarantee in normal prose
+first.
+
+ADCs in documentation comments may appear in generated API documentation. Use
+documentation comments when the rationale helps consumers understand the API.
+Keep implementation-only rationale in ordinary source comments.
 
 ---
 
