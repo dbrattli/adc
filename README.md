@@ -2,22 +2,24 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-Agent Decision Comments are concise, structured annotations that keep durable
+Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
 engineering decisions beside the code they govern. They give human reviewers a
 clear statement of intent and let future coding agents inherit the constraints
 and context behind an implementation.
 
-They are source-level decision records: smaller and more local than an RFC or
+ADCs are source-level decision records: smaller and more local than an RFC or
 ADR, but written with the same goal of preserving rationale.
 
-Agent Decision Comments are not transcripts of an agent's private reasoning.
-They record only the engineering rationale that future contributors need.
+ADCs are not transcripts of an agent's private reasoning. They record only the
+engineering rationale that future contributors need.
 
 ---
 
 ## Quick start
 
-Reference this file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
+To adopt ADCs in another repository, copy this convention into that repository
+as `AGENT_DECISION_COMMENTS.md`. Then reference the local file from `AGENTS.md`,
+`CLAUDE.md`, or the equivalent:
 
 ```text
 This repository uses Agent Decision Comments.
@@ -28,17 +30,19 @@ scope. Preserve them or update them explicitly. Add comments for non-obvious
 decisions, invariants, assumptions, and tradeoffs introduced by your change.
 ```
 
+If you use another stable path, such as `docs/agent-decision-comments.md`, name
+that exact path in the instruction file. Prefer a descriptive filename over
+`ADC.md` so contributors and agents can discover the convention easily.
+
 An Agent Decision Comment looks like this:
 
-```typescript
-/**
- * decision: processes events on one consumer to preserve arrival order
- * invariant: handlers observe events in enqueue order
- * tradeoff: limits throughput to gain deterministic processing
- */
-function processEvents(queue: EventQueue): void {
-  // ...
-}
+```python
+def process_events(queue):
+    """
+    decision: processes events on one consumer to preserve arrival order
+    invariant: handlers observe events in enqueue order
+    tradeoff: limits throughput to gain deterministic processing
+    """
 ```
 
 The annotations use ordinary comments or docstrings. They require no runtime
@@ -48,7 +52,7 @@ dependency and remain versioned with the code they describe.
 
 ## The vocabulary
 
-Agent Decision Comments define four labels:
+ADCs define four labels:
 
 ```text
 decision:    A deliberate choice and the reason for it.
@@ -125,15 +129,6 @@ The em dash is a readability convention, not a required parser delimiter.
 
 ### Good
 
-```fsharp
-(**
-decision: folds over the input to keep stack usage constant for files over 10k lines
-invariant: blocks accumulate in reverse order and are reversed exactly once at the end
-*)
-let parse (lines: string seq) : Document =
-    lines |> Seq.fold parseLine initial |> flushState |> _.Blocks |> List.rev
-```
-
 ```python
 def process_events(queue):
     """
@@ -154,14 +149,19 @@ function reducer(state: State, action: Action): State {
 }
 ```
 
-### Bad
+The convention is not tied to a particular language or comment syntax. For
+example, the same directives work in F# documentation comments:
 
 ```fsharp
-(** decision: uses a fold because it is better *)
-let parse lines = // ...
+(**
+decision: folds over the input to keep stack usage constant for files over 10k lines
+invariant: blocks accumulate in reverse order and are reversed exactly once at the end
+*)
+let parse (lines: string seq) : Document =
+    lines |> Seq.fold parseLine initial |> flushState |> _.Blocks |> List.rev
 ```
 
-The decision is vague and cannot be meaningfully reviewed.
+### Bad
 
 ```python
 # decision: loops over the events
@@ -171,11 +171,20 @@ for event in events:
 
 The annotation merely repeats the code.
 
+```typescript
+/** decision: uses immutable state because it is better */
+function reducer(state: State, action: Action): State {
+  // ...
+}
+```
+
+The decision is vague and cannot be meaningfully reviewed.
+
 ---
 
 ## When to write a comment
 
-Write or update an Agent Decision Comment when a change:
+Write or update an ADC when a change:
 
 - Chooses one meaningful algorithm, architecture, or data structure over another.
 - Introduces ordering, consistency, concurrency, or lifecycle constraints.
@@ -200,7 +209,7 @@ The goal is durable signal, not comment coverage.
 
 ## Scope
 
-Agent Decision Comments follow the structure of the source code:
+ADCs follow the structure of the source code:
 
 ```text
 File
@@ -230,26 +239,27 @@ If active directives conflict, surface the conflict before changing the code.
 When a local implementation departs from a broader decision, acknowledge the
 departure and contain its effects:
 
-```fsharp
-(**
-decision: uses immutable state by default so parser stages remain independently testable
-*)
-module Parser =
-
-    (**
-    decision: uses a mutable accumulator here despite the module default — profiling shows a 10x gain
-    invariant: mutation remains inside this function and never escapes to the caller
-    tradeoff: gives up local immutability to reduce allocation on the parsing hot path
-    *)
-    let parseHot (lines: string seq) : Block list =
-        // ...
+```typescript
+/**
+ * decision: uses immutable state by default so parser stages remain independently testable
+ */
+class Parser {
+  /**
+   * decision: mutates a local accumulator despite the class default — profiling shows a 10x gain
+   * invariant: mutation remains inside this method and never escapes to the caller
+   * tradeoff: gives up local immutability to reduce allocation on the parsing hot path
+   */
+  parseHot(lines: string[]): Block[] {
+    // ...
+  }
+}
 ```
 
 ---
 
 ## Existing comments are active constraints
 
-Before modifying code, read the Agent Decision Comments already governing it.
+Before modifying code, read the ADCs already governing it.
 
 - Preserve an `invariant:` or change it explicitly.
 - Do not silently reverse a `decision:`.
@@ -267,8 +277,7 @@ creates false confidence for reviewers and future agents.
 
 ## Relationship to RFCs and ADRs
 
-Agent Decision Comments complement full decision records; they do not replace
-them.
+ADCs complement full decision records; they do not replace them.
 
 Use an RFC or ADR when a decision:
 
@@ -293,8 +302,7 @@ constraint where an agent is most likely to encounter it.
 
 ## Review workflow
 
-Agent Decision Comments make intent reviewable before implementation details.
-A reviewer can:
+ADCs make intent reviewable before implementation details. A reviewer can:
 
 1. Read the active directives.
 2. Agree with or challenge each decision.
@@ -316,20 +324,22 @@ the implementation. Reviewers evaluate the comments before reviewing the code.
 
 ---
 
-## Literate source files
+## Long-form explanations
 
-In literate files such as notebooks, Jupytext, or Fable.Literate documents, use
-the directives to crystallize the durable result of a longer explanation:
+When a comment or docstring contains longer explanatory prose, use directives
+to crystallize its durable result. This also applies to notebooks and literate
+programs:
 
-```fsharp
-(**
-The parser accumulates blocks using a fold rather than building a recursive
-call stack. Production documents frequently exceed 5,000 lines, and the
-recursive prototype overflowed on larger inputs.
+```python
+def parse(lines):
+    """
+    The parser accumulates blocks using a fold rather than building a recursive
+    call stack. Production documents frequently exceed 5,000 lines, and the
+    recursive prototype overflowed on larger inputs.
 
-decision: folds over input instead of recursing to keep stack usage constant
-invariant: stack depth remains O(1) regardless of input length
-*)
+    decision: folds over input instead of recursing to keep stack usage constant
+    invariant: stack depth remains O(1) regardless of input length
+    """
 ```
 
 The prose explains the journey. The directives preserve the decision and its
@@ -358,7 +368,5 @@ Conventional Comments   structure intent in review feedback
 Agent Decision Comments structure intent in agent-written source code
 ```
 
-Agent Decision Comments apply the same basic discipline—a small vocabulary,
-predictable form, and human-readable meaning—to the decisions embedded in
-source code.
-
+ADCs apply the same basic discipline—a small vocabulary, predictable form, and
+human-readable meaning—to the decisions embedded in source code.
