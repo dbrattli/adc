@@ -48,14 +48,18 @@ An Agent Decision Comment looks like this:
 ```python
 def process_events(queue):
     """
+    Deliver queued events to their registered handlers.
+
     decision: processes events on one consumer to preserve arrival order
     invariant: handlers observe events in enqueue order
     tradeoff: limits throughput to gain deterministic processing
     """
 ```
 
-The annotations use ordinary comments or docstrings. They require no runtime
-dependency and remain versioned with the code they describe.
+The annotations use ordinary comments, documentation comments, or docstrings.
+In documentation comments, they supplement normal prose rather than replacing
+it. They require no runtime dependency and remain versioned with the code they
+describe.
 
 ---
 
@@ -130,6 +134,9 @@ Follow these rules:
   practical.
 - Place directives in the nearest comment or docstring attached to the code
   they govern.
+- In a docstring or documentation comment, describe the construct in normal
+  prose first, then leave a blank line before the directives.
+- Use an ordinary comment when ADCs are needed but API documentation is not.
 - State information that is not already evident from code, types, or tests.
 - Prefer specific and falsifiable statements over general claims.
 - Update the directive whenever its governed code or rationale changes.
@@ -141,6 +148,8 @@ The em dash is a readability convention, not a required parser delimiter.
 ```python
 def process_events(queue):
     """
+    Deliver queued events to their registered handlers.
+
     decision: uses one consumer because event ordering is externally observable
     invariant: the queue is drained before this function returns
     tradeoff: limits throughput to preserve deterministic processing
@@ -149,6 +158,8 @@ def process_events(queue):
 
 ```typescript
 /**
+ * Return the next application state for an action.
+ *
  * decision: updates state immutably to support time-travel debugging
  * invariant: state.version increases monotonically and never resets
  * tradeoff: copies state on each update to retain previous versions
@@ -163,6 +174,8 @@ example, the same directives work in F# documentation comments:
 
 ```fsharp
 (**
+Parses source lines into a document.
+
 decision: folds over the input to keep stack usage constant for files over 10k lines
 invariant: blocks accumulate in reverse order and are reversed exactly once at the end
 *)
@@ -181,7 +194,7 @@ for event in events:
 The annotation merely repeats the code.
 
 ```typescript
-/** decision: uses immutable state because it is better */
+/* decision: uses immutable state because it is better */
 function reducer(state: State, action: Action): State {
   // ...
 }
@@ -235,7 +248,7 @@ the specific site being modified.
 Language conventions determine attachment:
 
 - A file-level directive appears before the first declaration.
-- A documentation block immediately preceding a declaration governs that declaration.
+- A comment block immediately preceding a declaration governs that declaration.
 - A Python docstring governs its containing module, class, or function.
 - A local comment immediately preceding a block governs that block.
 
@@ -250,10 +263,14 @@ departure and contain its effects:
 
 ```typescript
 /**
+ * Parse source lines into document blocks.
+ *
  * decision: uses immutable state by default so parser stages remain independently testable
  */
 class Parser {
   /**
+   * Parse source lines on an allocation-sensitive hot path.
+   *
    * decision: mutates a local accumulator despite the class default — profiling shows a 10x gain
    * invariant: mutation remains inside this method and never escapes to the caller
    * tradeoff: gives up local immutability to reduce allocation on the parsing hot path
@@ -298,7 +315,7 @@ Use an RFC or ADR when a decision:
 Once accepted, project the durable consequence into the relevant source code:
 
 ```typescript
-/**
+/*
  * decision: stores monetary values as integer minor units — preserves ADR-004 rounding semantics
  * invariant: persisted amounts never use binary floating-point representation
  */
@@ -335,8 +352,9 @@ the implementation. Reviewers evaluate the comments before reviewing the code.
 
 ## Long-form explanations
 
-When a comment or docstring contains longer explanatory prose, use directives
-to crystallize its durable result. This also applies to notebooks and literate
+Documentation comments normally need only a brief summary before the
+directives. When longer explanatory prose is useful, use the directives to
+crystallize its durable result. This also applies to notebooks and literate
 programs:
 
 ```python
