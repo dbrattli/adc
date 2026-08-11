@@ -34,7 +34,9 @@ when practical. Use the exact lowercase directive labels `decision:`,
 `invariant:`, `assumption:`, and `tradeoff:`. Examples should demonstrate
 non-obvious rationale rather than restate code behavior. The Markdownlint
 configuration excludes code blocks from `MD013`; directives must remain on one
-physical line.
+physical line. In docstrings and documentation comments, place normal prose
+before the directives with a blank line between them. Use ordinary comments for
+directive-only examples.
 
 ## Testing Guidelines
 
