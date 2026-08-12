@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.1.1**
+- Specification version: **0.2.0**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
