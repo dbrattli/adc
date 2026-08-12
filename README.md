@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.1.1**
+- Specification version: **0.2.0**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
@@ -29,9 +29,9 @@ This repository uses Agent Decision Comments.
 See AGENT_DECISION_COMMENTS.md for the locally adopted convention.
 Upstream releases: https://github.com/dbrattli/adc/releases
 
-Before modifying code, read all active Agent Decision Comments in the affected
-scope. Preserve them or update them explicitly. Add comments for non-obvious
-decisions, invariants, assumptions, and tradeoffs introduced by your change.
+Before modifying code, read the ADCs already governing it.
+Treat them as active constraints and justify any change explicitly.
+Add ADCs for non-obvious rationale introduced by your change.
 ```
 
 If you use another stable path, such as `docs/agent-decision-comments.md`, name
@@ -304,7 +304,7 @@ class Parser {
 
 Before modifying code, read the ADCs already governing it.
 
-- Preserve an `invariant:` or change it explicitly.
+- Preserve an `invariant:` or justify the change explicitly.
 - Do not silently reverse a `decision:`.
 - Validate an `assumption:` when the change depends on it.
 - Reconsider a `tradeoff:` when its cost or benefit changes.
