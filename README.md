@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.2.1**
+- Specification version: **0.3.0**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
@@ -20,9 +20,15 @@ engineering rationale that future contributors need.
 
 ## Quick start
 
-To adopt ADCs in another repository, copy the convention from a published
-release into that repository as `AGENT_DECISION_COMMENTS.md`. Then reference
-the local file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
+To adopt ADCs in another repository, ask your coding agent:
+
+```text
+Let's adopt https://github.com/dbrattli/adc for this repository.
+```
+
+The agent should copy the convention from a published release into the
+repository as `AGENT_DECISION_COMMENTS.md`. It should then reference the local
+file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
 
 ```text
 This repository uses Agent Decision Comments.
