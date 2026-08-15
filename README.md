@@ -81,6 +81,10 @@ assumption:  An external belief that this code does not guarantee.
 tradeoff:    A cost accepted in exchange for a benefit.
 ```
 
+Directives are optional. Add only the directives that capture non-obvious
+rationale for the construct; you do not need to use all four, or any directive
+at all.
+
 Start with `decision:` and `invariant:`. Add `assumption:` or `tradeoff:` when
 they expose information that would otherwise be easy to miss.
 
