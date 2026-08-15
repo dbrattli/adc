@@ -57,6 +57,7 @@ def process_events(queue):
     Deliver queued events to their registered handlers.
 
     decision: processes events on one consumer to preserve arrival order
+    decision: routes events through a queue to decouple producers from handler timing
     invariant: handlers observe events in enqueue order
     tradeoff: limits throughput to gain deterministic processing
     """
@@ -131,6 +132,11 @@ Use this general form:
 ```text
 <label>: <statement> [— <reason or consequence>]
 ```
+
+Each directive line contains one directive and one statement. When an
+annotation contains multiple decisions, invariants, assumptions, or
+tradeoffs, write each as a separate directive line. Repeating the same
+directive label is allowed.
 
 Follow these rules:
 
