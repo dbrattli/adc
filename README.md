@@ -132,6 +132,11 @@ Use this general form:
 <label>: <statement> [— <reason or consequence>]
 ```
 
+Each directive line contains one directive and one statement. When an
+annotation contains multiple decisions, invariants, assumptions, or
+tradeoffs, write each as a separate directive line. Repeating the same
+directive label is allowed.
+
 Follow these rules:
 
 - Write one directive per physical line.
