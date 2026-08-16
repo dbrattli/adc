@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.3.1**
+- Specification version: **0.4.0**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
@@ -26,9 +26,9 @@ To adopt ADCs in another repository, ask your coding agent:
 Let's adopt https://github.com/dbrattli/adc for this repository.
 ```
 
-The agent should copy the convention from a published release into the
-repository as `AGENT_DECISION_COMMENTS.md`. It should then reference the local
-file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
+The agent should copy `AGENT_DECISION_COMMENTS.md` from a published release
+into the repository. It should then reference the local file from `AGENTS.md`,
+`CLAUDE.md`, or the equivalent:
 
 ```text
 This repository uses Agent Decision Comments.
@@ -39,6 +39,10 @@ Before modifying code, read the ADCs already governing it.
 Treat them as active constraints and justify any change explicitly.
 Add ADCs for non-obvious rationale introduced by your change.
 ```
+
+Keep the local convention file compact: agents read it on every task. The full
+specification in `README.md` is the human reference for discussion and edge
+cases.
 
 If you use another stable path, such as `docs/agent-decision-comments.md`, name
 that exact path in the instruction file. Prefer a descriptive filename over
@@ -417,7 +421,8 @@ adoption requirements.
 Version changes apply to the convention itself, not repository-only maintenance
 such as CI or contributor documentation. Each specification version is
 published as a GitHub release and `vX.Y.Z` tag so adopting repositories can
-trace and review updates.
+trace and review updates. Releases include both the compact convention and the
+full specification.
 
 ---
 
