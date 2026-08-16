@@ -5,10 +5,14 @@
 This is a documentation-first repository for the Agent Decision Comments
 convention. `README.md` is the canonical specification: it defines the four
 directives, their format, scope, examples, review workflow, and current version.
-`LICENSE` contains the MIT license. There are currently no source, test,
-generated, or asset directories. Keep new documentation at the repository root
-unless a larger collection clearly warrants a focused directory such as
-`examples/`.
+`AGENT_DECISION_COMMENTS.md` is the compact operational convention that
+adopting repositories copy into their own repositories; agents read it on every
+task, so keep it short. Keep it consistent with the full specification: every
+rule and example it states must match `README.md`, and both files must carry
+the same specification version. `LICENSE` contains the MIT license. There are
+currently no source, test, generated, or asset directories. Keep new
+documentation at the repository root unless a larger collection clearly warrants
+a focused directory such as `examples/`.
 
 ## Build, Test, and Development Commands
 
@@ -18,9 +22,10 @@ check. Run these commands before submitting a change:
 - `npx --yes markdownlint-cli2@0.23.2 --config .markdownlint.jsonc "**/*.md"`
   runs the same linter version as CI.
 - `git diff --check` detects trailing whitespace and malformed patches.
-- `rg '^#{1,6} ' README.md AGENTS.md` reviews the Markdown heading hierarchy.
-- `git diff -- README.md AGENTS.md` gives a focused review of documentation
-  changes.
+- `rg '^#{1,6} ' README.md AGENTS.md AGENT_DECISION_COMMENTS.md` reviews the
+  Markdown heading hierarchy.
+- `git diff -- README.md AGENTS.md AGENT_DECISION_COMMENTS.md` gives a focused
+  review of documentation changes.
 
 Also render changed Markdown in a previewer and verify that fenced examples,
 lists, and headings display correctly.
@@ -43,8 +48,9 @@ directive-only examples.
 The workflow in `.github/workflows/markdownlint.yml` lints every Markdown file
 on pushes and pull requests. Confirm every new example matches the format and
 scope rules in `README.md`, uses valid syntax for its declared language, and
-does not contradict another section. Run the local lint command and
-`git diff --check`, then inspect the rendered output.
+does not contradict another section, including `AGENT_DECISION_COMMENTS.md`.
+Run the local lint command and `git diff --check`, then inspect the rendered
+output.
 
 ## Commit & Pull Request Guidelines
 
