@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.4.0**
+- Specification version: **0.4.1**
 - Full specification: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep
@@ -41,15 +41,18 @@ not an assumption.
 The em dash is a readability convention, not a parser delimiter.
 
 ```python
-def process_events(queue):
+def process_events(queue, handle):
     """
-    Deliver queued events to their registered handlers.
+    Deliver events from a deque to a synchronous handler in enqueue order.
+    The caller owns the deque exclusively until processing finishes.
 
     decision: processes events on one consumer to preserve arrival order
     decision: routes events through a queue to decouple producers from handler timing
     invariant: handlers observe events in enqueue order
     tradeoff: limits throughput to gain deterministic processing
     """
+    while queue:
+        handle(queue.popleft())
 ```
 
 ## When to write one
