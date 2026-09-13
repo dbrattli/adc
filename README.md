@@ -488,4 +488,3 @@ Add this setting to your user or workspace `settings.json`:
 
 For languages outside the extension's default file patterns, such as Python or
 F#, also configure `todohighlight.include` to include your source files.
-
