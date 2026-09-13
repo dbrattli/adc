@@ -449,3 +449,43 @@ Agent Decision Comments structure intent in agent-written source code
 
 ADCs apply the same basic discipline — a small vocabulary, predictable form,
 and human-readable meaning — to the decisions embedded in source code.
+
+---
+
+## Editor highlighting
+
+In VS Code, you can use [TODO Highlight][todo-highlight] to highlight ADC labels.
+Add this setting to your user or workspace `settings.json`:
+
+[todo-highlight]: https://marketplace.visualstudio.com/items?itemName=wayou.vscode-todo-highlight
+
+```json
+{
+  "todohighlight.keywords": [
+    {
+      "text": "decision:",
+      "color": "#c792ea",
+      "backgroundColor": "transparent"
+    },
+    {
+      "text": "assumption:",
+      "color": "#82aaff",
+      "backgroundColor": "transparent"
+    },
+    {
+      "text": "invariant:",
+      "color": "#ffcb6b",
+      "backgroundColor": "transparent"
+    },
+    {
+      "text": "tradeoff:",
+      "color": "#7fdbca",
+      "backgroundColor": "transparent"
+    }
+  ]
+}
+```
+
+For languages outside the extension's default file patterns, such as Python or
+F#, also configure `todohighlight.include` to include your source files.
+
