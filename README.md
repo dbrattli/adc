@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.4.0**
+- Specification version: **0.4.1**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
@@ -56,15 +56,18 @@ change.
 An Agent Decision Comment looks like this:
 
 ```python
-def process_events(queue):
+def process_events(queue, handle):
     """
-    Deliver queued events to their registered handlers.
+    Deliver events from a deque to a synchronous handler in enqueue order.
+    The caller owns the deque exclusively until processing finishes.
 
     decision: processes events on one consumer to preserve arrival order
     decision: routes events through a queue to decouple producers from handler timing
     invariant: handlers observe events in enqueue order
     tradeoff: limits throughput to gain deterministic processing
     """
+    while queue:
+        handle(queue.popleft())
 ```
 
 The annotations use ordinary comments, documentation comments, or docstrings.
@@ -98,7 +101,7 @@ Records the selected approach and why it is appropriate here. It does not imply
 that every possible alternative was evaluated.
 
 ```text
-decision: uses a fold instead of recursive descent to keep stack usage constant
+decision: prepends during the fold to avoid repeatedly copying the accumulated list
 ```
 
 ### `invariant:`
@@ -166,26 +169,32 @@ The em dash is a readability convention, not a required parser delimiter.
 ### Good
 
 ```python
-def process_events(queue):
+def process_events(queue, handle):
     """
-    Deliver queued events to their registered handlers.
+    Deliver events from a deque to a synchronous handler in enqueue order.
+    The caller owns the deque exclusively until processing finishes.
 
     decision: uses one consumer because event ordering is externally observable
-    invariant: the queue is drained before this function returns
+    invariant: a handler finishes before the next event is dispatched
     tradeoff: limits throughput to preserve deterministic processing
     """
+    while queue:
+        handle(queue.popleft())
 ```
 
 ```typescript
+type State = { readonly count: number };
+type Action = { type: "increment" } | { type: "reset" };
+
 /**
- * Return the next application state for an action.
+ * Return the next counter state without modifying the input state.
  *
  * decision: updates state immutably to support time-travel debugging
- * invariant: state.version increases monotonically and never resets
+ * invariant: earlier states remain unchanged so replay can start from any snapshot
  * tradeoff: copies state on each update to retain previous versions
  */
 function reducer(state: State, action: Action): State {
-  // ...
+  return { count: action.type === "increment" ? state.count + 1 : 0 };
 }
 ```
 
@@ -193,14 +202,17 @@ The convention is not tied to a particular language or comment syntax. For
 example, the same directives work in F# documentation comments:
 
 ```fsharp
-(**
-Parses source lines into a document.
+type Document = { Lines: string list }
 
-decision: folds over the input to keep stack usage constant for files over 10k lines
-invariant: blocks accumulate in reverse order and are reversed exactly once at the end
+(**
+Reads source lines into a document, preserving their order.
+
+decision: prepends during the fold to avoid repeatedly copying the accumulated list
+invariant: source-line order is preserved because diagnostics refer to original line numbers
 *)
 let parse (lines: string seq) : Document =
-    lines |> Seq.fold parseLine initial |> flushState |> _.Blocks |> List.rev
+    let reversed = lines |> Seq.fold (fun acc line -> line :: acc) []
+    { Lines = List.rev reversed }
 ```
 
 ### Bad
@@ -216,7 +228,7 @@ The annotation merely repeats the code.
 ```typescript
 /* decision: uses immutable state because it is better */
 function reducer(state: State, action: Action): State {
-  // ...
+  return { count: action.type === "increment" ? state.count + 1 : 0 };
 }
 ```
 
@@ -300,20 +312,25 @@ departure and contain its effects:
 
 ```typescript
 /**
- * Parse source lines into document blocks.
+ * Normalize source lines for a line-based document format.
  *
  * decision: uses immutable state by default so parser stages remain independently testable
  */
 class Parser {
   /**
-   * Parse source lines on an allocation-sensitive hot path.
+   * Return trimmed, nonempty lines without changing the input array.
    *
-   * decision: mutates a local accumulator despite the class default — profiling shows a 10x gain
-   * invariant: mutation remains inside this method and never escapes to the caller
-   * tradeoff: gives up local immutability to reduce allocation on the parsing hot path
+   * decision: mutates a local accumulator despite the class default to avoid intermediate arrays
+   * invariant: the caller's input array remains unchanged so other parser stages can reuse it
+   * tradeoff: uses an explicit loop to avoid allocating separate mapped and filtered arrays
    */
-  parseHot(lines: string[]): Block[] {
-    // ...
+  normalize(lines: readonly string[]): string[] {
+    const result: string[] = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed !== "") result.push(trimmed);
+    }
+    return result;
   }
 }
 ```
@@ -395,15 +412,21 @@ crystallize its durable result. This also applies to notebooks and literate
 programs:
 
 ```python
-def parse(lines):
+def flatten_sections(sections):
     """
-    The parser accumulates blocks using a fold rather than building a recursive
-    call stack. Production documents frequently exceed 5,000 lines, and the
-    recursive prototype overflowed on larger inputs.
+    Return lines from each section in source order.
 
-    decision: folds over input instead of recursing to keep stack usage constant
-    invariant: stack depth remains O(1) regardless of input length
+    Each section is already parsed into a sequence of lines. Walking sections
+    iteratively avoids one recursive call per section, so document size does
+    not depend on the interpreter's recursion limit.
+
+    decision: iterates over sections to avoid recursion limits on large documents
+    invariant: traversal uses constant call-stack depth regardless of section count
     """
+    lines = []
+    for section in sections:
+        lines.extend(section)
+    return lines
 ```
 
 The prose explains the journey. The directives preserve the decision and its
