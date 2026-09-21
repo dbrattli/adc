@@ -1,3 +1,8 @@
+---
+name: adc
+description: Apply Agent Decision Comments when changing or reviewing code in repositories that use ADCs.
+---
+
 # Agent Decision Comments
 
 > Preserve the why in agent-written, human-reviewed code.
