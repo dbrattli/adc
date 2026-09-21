@@ -20,19 +20,27 @@ engineering rationale that future contributors need.
 
 ## Quick start
 
-To adopt ADCs in another repository, ask your coding agent:
+Install the `adc` skill globally for Claude Code, Pi, and Codex directly from
+this repository:
 
-```text
-Let's adopt https://github.com/dbrattli/adc for this repository.
+```bash
+npx skills add dbrattli/adc \
+  --skill adc --global \
+  --agent claude-code --agent pi --agent codex
 ```
 
-The agent should copy `AGENT_DECISION_COMMENTS.md` from a published release
-into the repository. It should then reference the local file from `AGENTS.md`,
-`CLAUDE.md`, or the equivalent:
+The skill contains the complete compact convention for agents that support
+skills. Omit `--global` to install it only for the current project, or run the
+command without agent flags to choose targets interactively.
+
+For an agent without skill support, copy `skills/adc/SKILL.md` from a published
+release into the adopting repository as `ADC.md`. Its YAML block is valid
+Markdown frontmatter and can remain in the copied file. Reference the local
+file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
 
 ```text
 This repository uses Agent Decision Comments.
-See AGENT_DECISION_COMMENTS.md for the locally adopted convention.
+See ADC.md for the locally adopted convention.
 Upstream releases: https://github.com/dbrattli/adc/releases
 
 Before modifying code, read the ADCs already governing it.
@@ -42,11 +50,8 @@ Add ADCs for non-obvious rationale introduced by your change.
 
 Keep the local convention file compact: agents read it on every task. The full
 specification in `README.md` is the human reference for discussion and edge
-cases.
-
-If you use another stable path, such as `docs/agent-decision-comments.md`, name
-that exact path in the instruction file. Prefer a descriptive filename over
-`ADC.md` so contributors and agents can discover the convention easily.
+cases. If you use another stable path, name that exact path in the instruction
+file.
 
 Keep the local copy pinned to a release and update it through an ordinary code
 review. Do not use a moving branch such as `main` as the sole source of agent
