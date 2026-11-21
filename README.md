@@ -2,26 +2,18 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.4.1**
+- Specification version: **0.5.0**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
-Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
-engineering decisions beside the code they govern. They give human reviewers a
-clear statement of intent and let future coding agents inherit the constraints
-and context behind an implementation.
-
-ADCs are source-level decision records: smaller and more local than an RFC or
-ADR, but written with the same goal of preserving rationale.
-
-ADCs are not transcripts of an agent's private reasoning. They record only the
-engineering rationale that future contributors need.
-
----
+Agent Decision Comments (ADCs) preserve durable engineering decisions and
+constraints beside their implementation. They are local decision records, not
+transcripts of private reasoning. Use ordinary comments, documentation comments,
+or docstrings; no runtime dependency is required.
+Keep ADCs versioned with the code they govern.
 
 ## Quick start
 
-Install the `adc` skill globally for Claude Code, Pi, and Codex directly from
-this repository:
+Install the compact [adc skill](skills/adc/SKILL.md):
 
 ```bash
 npx skills add dbrattli/adc \
@@ -29,81 +21,40 @@ npx skills add dbrattli/adc \
   --agent claude-code --agent pi --agent codex
 ```
 
-The skill contains the complete compact convention for agents that support
-skills. Omit `--global` to install it only for the current project, or run the
-command without agent flags to choose targets interactively.
-
-For an agent without skill support, copy `skills/adc/SKILL.md` from a published
-release into the adopting repository as `ADC.md`. Its YAML block is valid
-Markdown frontmatter and can remain in the copied file. Reference the local
-file from `AGENTS.md`, `CLAUDE.md`, or the equivalent:
+Omit `--global` for project installation or agent flags for interactive selection.
+For agents without skills, copy `skills/adc/SKILL.md` from a published release to
+`ADC.md`; its YAML frontmatter can remain. Reference the exact local path from
+`AGENTS.md`, `CLAUDE.md`, or equivalent:
 
 ```text
-This repository uses Agent Decision Comments.
-See ADC.md for the locally adopted convention.
-Upstream releases: https://github.com/dbrattli/adc/releases
-
-Before modifying code, read the ADCs already governing it.
-Treat them as active constraints and justify any change explicitly.
+This repository uses Agent Decision Comments. See ADC.md.
+Before modifying code, read its active ADCs and justify changes explicitly.
 Add ADCs for non-obvious rationale introduced by your change.
+Upstream releases: https://github.com/dbrattli/adc/releases
 ```
 
-Keep the local convention file compact: agents read it on every task. The full
-specification in `README.md` is the human reference for discussion and edge
-cases. If you use another stable path, name that exact path in the instruction
-file.
-
-Keep the local copy pinned to a release and update it through an ordinary code
-review. Do not use a moving branch such as `main` as the sole source of agent
-instructions; its contents can change without a corresponding repository
-change.
-
-An Agent Decision Comment looks like this:
-
-```python
-def process_events(queue, handle):
-    """
-    Deliver events from a deque to a synchronous handler in enqueue order.
-    The caller owns the deque exclusively until processing finishes.
-
-    decision: processes events on one consumer to preserve arrival order
-    decision: routes events through a queue to decouple producers from handler timing
-    invariant: handlers observe events in enqueue order
-    tradeoff: limits throughput to gain deterministic processing
-    """
-    while queue:
-        handle(queue.popleft())
-```
-
-The annotations use ordinary comments, documentation comments, or docstrings.
-In documentation comments, they supplement normal prose rather than replacing
-it. They require no runtime dependency and remain versioned with the code they
-describe.
-
----
+Keep the local convention compact: agents read it on every task. Pin copied
+instructions to a release and review updates; do not rely solely on a moving
+branch such as `main`. This README is the full specification and edge-case
+reference; `SKILL.md` is the operational summary.
 
 ## The vocabulary
 
-ADCs define four labels:
+All five labels are optional. Start with `decision:` and `invariant:`; add other
+labels only when they convey useful intent.
 
 ```text
 decision:    A deliberate choice and the reason for it.
 invariant:   A falsifiable property that the code must preserve.
 assumption:  An external belief that this code does not guarantee.
 tradeoff:    A cost accepted in exchange for a benefit.
+lean:        A formal specification or supporting declaration written in Lean.
 ```
-
-Directives are optional. Add only the directives that capture non-obvious
-rationale for the construct; you do not need to use all four, or any directive
-at all.
-
-Start with `decision:` and `invariant:`. Add `assumption:` or `tradeoff:` when
-they expose information that would otherwise be easy to miss.
 
 ### `decision:`
 
-Records the selected approach and why it is appropriate here. It does not imply
-that every possible alternative was evaluated.
+Record the selected approach and why it fits; this does not imply exhaustive
+comparison of alternatives.
 
 ```text
 decision: prepends during the fold to avoid repeatedly copying the accumulated list
@@ -111,9 +62,8 @@ decision: prepends during the fold to avoid repeatedly copying the accumulated l
 
 ### `invariant:`
 
-Records a property that must remain true across future changes. It should be
-specific enough for a reviewer to challenge and, where practical, for a test or
-tool to verify.
+State a property that must survive future changes, specific enough to challenge
+and, where practical, test or check with a tool.
 
 ```text
 invariant: blocks accumulate in reverse order and are reversed exactly once
@@ -121,65 +71,101 @@ invariant: blocks accumulate in reverse order and are reversed exactly once
 
 ### `assumption:`
 
-Records something outside the annotated code that is believed to be true but
-is not guaranteed by that code. Include the consequence when it is useful.
+State an external belief the code does not guarantee, with its consequence when
+useful. Caller obligations are preconditions: express them through types,
+contracts, validation, or normal API documentation, not `assumption:`.
 
 ```text
 assumption: upstream preserves source-line order — otherwise block positions are invalid
 ```
 
-A caller obligation is a precondition, not an assumption. Express preconditions
-through types, contracts, validation, or the language's normal API documentation.
-
 ### `tradeoff:`
 
-Records both the accepted cost and the resulting benefit.
+State both the accepted cost and the benefit.
 
 ```text
 tradeoff: performs an O(n) copy per update to enable time-travel debugging
 ```
 
----
+### `lean:`
+
+Use Lean types, predicates, or supporting declarations to make intent precise.
+Adopting ADC does not require Lean or a verification toolchain.
+`invariant:` states a human-readable property; `lean:` can formalize that
+property, a precondition, or an input/output contract. Do not require duplicate
+prose directives; retain domain meaning, parameter correspondence, and rationale.
+A predicate defines a requirement, not evidence that the implementation meets it.
+
+```fsharp
+/// Transform each item, preserving its position on successful return.
+/// f models the callback; xs and ys model the input and output sequences.
+///
+/// decision: specifies elementwise correspondence because equal counts permit incorrect results
+/// lean: `def MapContract (f : α → β) (xs : List α) (ys : List β) : Prop := ys = xs.map f`
+let map f items = List.map f items
+```
+
+- Reuse domain type names where practical. Contract names may differ, such as
+  `MapContract` for `map`; explain correspondence nearby. Names and adjacency aid
+  review but do not verify the connection.
+- Adjacent definitions need no extra reference. For separate models, reference
+  the qualified Lean name and file in prose or an `invariant:`. `model:` and
+  `ref:` are not ADC directives.
+- Write one Lean command per `lean:` line, raw or inside one pair of Markdown
+  backticks. Remove the backticks before checking.
+- For multiline code or code containing backticks, use a fenced `lean` block in
+  a host comment. This is a continuation format, not another directive. Remove
+  host prefixes/indentation while preserving relative Lean indentation.
+- Extract commands into one compilation unit in source order. Imports,
+  namespaces, and `end` establish context, not host implementation guarantees.
+
+#### Checking formal intent
+
+[leanify.py](tools/leanify.py) retains host code and ADCs as Lean comments;
+`--check` runs Lean and maps diagnostics to the source. Follow its
+[documented language/comment support](tools/README.md); extractors must state
+these limits even though ADC itself is language-independent.
+See the [Rust and F# examples](examples/literate-lean/README.md).
+
+Distinguish the evidence:
+
+- **Well-formedness:** names resolve and types/propositions check; this does not
+  establish satisfiability or correct requirements.
+- **Model proofs:** theorems establish consequences under their assumptions.
+  Existence proofs can show a contract admits results; definitions alone cannot.
+- **Implementation conformance:** requires a verified connection to the host
+  program and separate evidence. Comment extraction does not establish it.
+
+Review requirements, parameter correspondence, proof assumptions/dependencies,
+and tests. State limits such as callback effects, exceptions, mutation, and
+integer semantics. Compilation does not justify axioms or guarantee complete
+proofs. The bundled checker treats warnings, including ordinary `sorry` warnings,
+as errors; it is not a proof-trust auditor.
 
 ## Format
-
-Use this general form:
 
 ```text
 <label>: <statement> [— <reason or consequence>]
 ```
 
-Each directive line contains one directive and one statement. When an
-annotation contains multiple decisions, invariants, assumptions, or
-tradeoffs, write each as a separate directive line. Repeating the same
-directive label is allowed.
-
-Follow these rules:
-
-- Write one directive per physical line.
-- Use present tense: `uses a fold`, not `was changed to use a fold`.
-- Keep directives concise and within the repository's normal line length when
-  practical.
-- Place directives in the nearest comment or docstring attached to the code
-  they govern.
-- In a docstring or documentation comment, describe the construct in normal
-  prose first, then leave a blank line before the directives.
-- Use an ordinary comment when ADCs are needed but API documentation is not.
-- State information that is not already evident from code, types, or tests.
-- Prefer specific and falsifiable statements over general claims.
-- Update the directive whenever its governed code or rationale changes.
-
-The em dash is a readability convention, not a required parser delimiter.
-
-### Good
+- Use one directive and one statement per physical line; repeat labels as needed.
+  `lean:` contains code rather than prose.
+- Keep prose present-tense, specific, falsifiable, and concise; follow local line
+  length where practical. Do not restate code, types, or tests.
+- Attach directives to the nearest governed construct. In documentation comments
+  and docstrings, put normal prose first, then a blank line and the directives.
+  Use ordinary comments when API documentation is unnecessary.
+- Update or remove directives when their governed code or rationale changes.
+  The em dash is optional formatting, not a parser delimiter.
 
 ```python
 def process_events(queue, handle):
     """
-    Deliver events from a deque to a synchronous handler in enqueue order.
+    Deliver events to a synchronous handler in enqueue order.
     The caller owns the deque exclusively until processing finishes.
 
-    decision: uses one consumer because event ordering is externally observable
+    decision: processes events on one consumer to preserve arrival order
+    decision: routes events through a queue to decouple producers from handler timing
     invariant: a handler finishes before the next event is dispatched
     tradeoff: limits throughput to preserve deterministic processing
     """
@@ -187,332 +173,147 @@ def process_events(queue, handle):
         handle(queue.popleft())
 ```
 
-```typescript
-type State = { readonly count: number };
-type Action = { type: "increment" } | { type: "reset" };
-
-/**
- * Return the next counter state without modifying the input state.
- *
- * decision: updates state immutably to support time-travel debugging
- * invariant: earlier states remain unchanged so replay can start from any snapshot
- * tradeoff: copies state on each update to retain previous versions
- */
-function reducer(state: State, action: Action): State {
-  return { count: action.type === "increment" ? state.count + 1 : 0 };
-}
-```
-
-The convention is not tied to a particular language or comment syntax. For
-example, the same directives work in F# documentation comments:
-
-```fsharp
-type Document = { Lines: string list }
-
-(**
-Reads source lines into a document, preserving their order.
-
-decision: prepends during the fold to avoid repeatedly copying the accumulated list
-invariant: source-line order is preserved because diagnostics refer to original line numbers
-*)
-let parse (lines: string seq) : Document =
-    let reversed = lines |> Seq.fold (fun acc line -> line :: acc) []
-    { Lines = List.rev reversed }
-```
-
-### Bad
-
-```python
-# decision: loops over the events
-for event in events:
-    process(event)
-```
-
-The annotation merely repeats the code.
-
-```typescript
-/* decision: uses immutable state because it is better */
-function reducer(state: State, action: Action): State {
-  return { count: action.type === "increment" ? state.count + 1 : 0 };
-}
-```
-
-The decision is vague and cannot be meaningfully reviewed.
+Avoid statements such as `decision: loops over the events` (restates mechanics)
+or `decision: uses immutable state because it is better` (unreviewable rationale).
 
 ### Public APIs and generated documentation
 
-Public APIs may carry ADCs when their shape or semantics embody a non-obvious
-architectural choice. Use them selectively for decisions such as portability
-boundaries, lifecycle semantics, compatibility constraints, or intentional
-escape hatches.
+Use ADCs selectively for API decisions such as portability, lifecycle,
+compatibility, or escape hatches. State caller guarantees in normal API prose
+first, including guarantees also expressed by `invariant:`, and test them where
+practical. ADCs supplement rather than replace consumer documentation.
+Documentation comments may appear in generated docs: put consumer-relevant
+rationale there and implementation-only rationale in ordinary comments.
 
-Anything callers must rely on remains stated in ordinary API documentation and,
-where practical, enforced by tests. An ADC explains why the contract or API
-shape was chosen; it does not replace consumer-facing documentation. If an
-`invariant:` describes a public guarantee, state that guarantee in normal prose
-first.
+### Long-form explanations
 
-ADCs in documentation comments may appear in generated API documentation. Use
-documentation comments when the rationale helps consumers understand the API.
-Keep implementation-only rationale in ordinary source comments.
-
----
+When longer prose is needed, including in notebooks and literate programs,
+place it before the directives. Use ADCs to capture its durable decisions and
+constraints rather than repeat the explanation.
 
 ## When to write a comment
 
-Write or update an ADC when a change:
+Add or update ADCs for:
 
-- Chooses one meaningful algorithm, architecture, or data structure over another.
-- Introduces ordering, consistency, concurrency, or lifecycle constraints.
-- Establishes a boundary that future code must not accidentally cross.
-- Relies on an external condition that could prove false.
-- Accepts a known limitation in return for a concrete benefit.
-- Implements behavior that a competent reviewer would reasonably question.
-- Distills a relevant RFC or ADR decision at the point where it constrains code.
+- Meaningful algorithm, architecture, or data-structure choices.
+- Ordering, consistency, concurrency, lifecycle, or boundary constraints.
+- External beliefs that could fail and limitations accepted for a benefit.
+- Behavior a competent reviewer would question.
+- Local consequences of accepted RFCs/ADRs.
 
-Do not add a comment for:
-
-- Mechanics that are clear from the implementation.
-- Facts already enforced by the type system.
-- Trivial formatting, renaming, or mechanical refactoring.
-- Generic advice that does not constrain the annotated code.
-- Speculative reasoning that did not affect the implementation.
-- Every function merely for consistency.
-
-The goal is durable signal, not comment coverage.
-
----
+Skip obvious mechanics, type-enforced facts, trivial formatting/renaming or
+mechanical refactoring, generic advice that does not constrain this code,
+speculation that did not affect implementation, and per-function coverage.
 
 ## Scope
 
-ADCs follow the structure of the source code:
+Collect active ADCs from file → module/namespace → type → function → local block.
+Each governs its attached construct and nested constructs:
 
-```text
-File
-  Module or namespace
-    Type
-      Function or method
-        Local block
-```
-
-A directive governs the construct it is attached to and its nested constructs.
-Before changing code, collect the active directives from the file level down to
-the specific site being modified.
-
-Language conventions determine attachment:
-
-- A file-level directive appears before the first declaration.
-- A comment block immediately preceding a declaration governs that declaration.
+- File-level directives precede the first declaration.
+- A comment immediately before a declaration or block governs that construct.
 - A Python docstring governs its containing module, class, or function.
-- A local comment immediately preceding a block governs that block.
 
-Directives from enclosing scopes accumulate. A narrower directive may clarify
-or specialize a broader decision, but it does not silently cancel an invariant.
-If active directives conflict, surface the conflict before changing the code.
+Enclosing directives accumulate. Local directives may clarify or specialize a
+broader decision, but never silently cancel an invariant. Surface conflicts
+before editing.
 
 ### Explicit local departure
 
-When a local implementation departs from a broader decision, acknowledge the
-departure and contain its effects:
+Acknowledge departures from broader decisions and contain their effects.
+For example, a local accumulator can depart from a module's immutable-state
+policy while preserving the caller's input:
 
 ```typescript
 /**
- * Normalize source lines for a line-based document format.
+ * Return trimmed, nonempty lines without modifying the input.
  *
- * decision: uses immutable state by default so parser stages remain independently testable
+ * decision: mutates a local accumulator despite the module's immutable-state policy to avoid intermediate arrays
+ * invariant: the caller's input remains unchanged so it can be reused
+ * tradeoff: uses an explicit loop to avoid allocating mapped and filtered arrays
  */
-class Parser {
-  /**
-   * Return trimmed, nonempty lines without changing the input array.
-   *
-   * decision: mutates a local accumulator despite the class default to avoid intermediate arrays
-   * invariant: the caller's input array remains unchanged so other parser stages can reuse it
-   * tradeoff: uses an explicit loop to avoid allocating separate mapped and filtered arrays
-   */
-  normalize(lines: readonly string[]): string[] {
-    const result: string[] = [];
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed !== "") result.push(trimmed);
-    }
-    return result;
+function normalize(lines: readonly string[]): string[] {
+  const result: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed !== "") result.push(trimmed);
   }
+  return result;
 }
 ```
 
----
-
 ## Existing comments are active constraints
 
-Before modifying code, read the ADCs already governing it.
+Before changing code, read its active ADCs:
 
-- Preserve an `invariant:` or justify the change explicitly.
-- Do not silently reverse a `decision:`.
-- Validate an `assumption:` when the change depends on it.
-- Reconsider a `tradeoff:` when its cost or benefit changes.
+- Preserve `invariant:` properties or explicitly justify changes.
+- Preserve `lean:` contracts and parameter correspondence; explicitly review
+  semantic changes and rerun adopted Lean checks.
+- Do not silently reverse `decision:` choices.
+- Validate `assumption:` beliefs when the change depends on them.
+- Reconsider `tradeoff:` costs and benefits when either changes.
 
-Annotations are not immutable historical artifacts. They describe the current
-rationale. If a decision changes, update or remove the annotation in the same
-change and call out the reversal in the review summary.
-
-Leaving an obsolete directive in place is worse than removing it because it
-creates false confidence for reviewers and future agents.
-
----
+Update or remove stale annotations in the same change and report changed
+decisions in the review summary. ADCs describe current intent; obsolete ones
+mislead future readers.
 
 ## Relationship to RFCs and ADRs
 
-ADCs complement full decision records; they do not replace them.
-
-Use an RFC or ADR when a decision:
-
-- Spans several systems or repositories.
-- Needs alternatives, consequences, status, ownership, or historical context.
-- Requires discussion and approval outside the code review.
-- Is important independently of a particular implementation site.
-
-Once accepted, project the durable consequence into the relevant source code:
+Use an RFC/ADR for decisions spanning systems/repositories, requiring discussion
+or approval beyond code review, needing alternatives/history/status/ownership,
+or significant beyond one implementation site. ADCs complement these records:
+project accepted consequences into the code where they constrain changes.
 
 ```typescript
-/*
- * decision: stores monetary values as integer minor units — preserves ADR-004 rounding semantics
- * invariant: persisted amounts never use binary floating-point representation
- */
+// decision: stores money as integer minor units — preserves ADR-004 rounding semantics
+// invariant: persisted amounts never use binary floating-point representation
 ```
-
-The full record preserves the discussion. The code-local comment preserves the
-constraint where an agent is most likely to encounter it.
-
----
 
 ## Review workflow
 
-ADCs make intent reviewable before implementation details. A reviewer can:
+Read ADCs before implementation details: challenge decisions, check invariants,
+probe assumptions, reassess tradeoffs, and review formal contracts, parameter
+correspondence, and model proofs. Then compare implementation and tests with that
+intent. Comments do not replace implementation review.
 
-1. Read the active directives.
-2. Agree with or challenge each decision.
-3. Check that every invariant is upheld.
-4. Probe assumptions against their external context.
-5. Decide whether each tradeoff remains acceptable.
-6. Review the implementation and tests against that stated intent.
-
-The comments improve code review; they do not replace implementation review.
-
-For teams that want a strict review contract, add this policy to their agent
-instructions:
+For a strict review contract, add this policy to agent instructions:
 
 ```text
-A change that introduces a non-obvious engineering decision or constraint is
-incomplete until its Agent Decision Comments are present and consistent with
-the implementation. Reviewers evaluate the comments before reviewing the code.
+A change introducing a non-obvious decision or constraint is incomplete until
+its ADCs are present and consistent with the implementation.
+Review comments before implementation details.
 ```
-
----
-
-## Long-form explanations
-
-Documentation comments normally need only a brief summary before the
-directives. When longer explanatory prose is useful, use the directives to
-crystallize its durable result. This also applies to notebooks and literate
-programs:
-
-```python
-def flatten_sections(sections):
-    """
-    Return lines from each section in source order.
-
-    Each section is already parsed into a sequence of lines. Walking sections
-    iteratively avoids one recursive call per section, so document size does
-    not depend on the interpreter's recursion limit.
-
-    decision: iterates over sections to avoid recursion limits on large documents
-    invariant: traversal uses constant call-stack depth regardless of section count
-    """
-    lines = []
-    for section in sections:
-        lines.extend(section)
-    return lines
-```
-
-The prose explains the journey. The directives preserve the decision and its
-constraint for reviewers, tools, and future agents.
-
----
 
 ## Versioning
 
-The ADC specification follows Semantic Versioning. Patch releases clarify
-wording or examples without changing meaning. Minor releases add compatible
-directives or guidance. Major releases change existing directive semantics or
-adoption requirements.
+Use Semantic Versioning: patches clarify without changing meaning; minor releases
+add compatible directives/guidance; major releases change existing semantics or
+adoption requirements. Repository-only maintenance needs no specification bump.
+Publish each specification version as a GitHub release and `vX.Y.Z` tag containing
+both the full specification and compact skill so adopters can review updates.
 
-Version changes apply to the convention itself, not repository-only maintenance
-such as CI or contributor documentation. Each specification version is
-published as a GitHub release and `vX.Y.Z` tag so adopting repositories can
-trace and review updates. Releases include both the compact convention and the
-full specification.
+## Relationship to other conventions
 
----
-
-## The three layers
-
-```text
-Types      constrain data and interfaces
-Tests      check observable behaviour
-Comments   preserve decisions and constraints
-```
-
-All three describe different aspects of the system. Agent Decision Comments
-capture intent that implementation and tests often cannot express on their own.
-
----
-
-## Ecosystem
-
-```text
-Conventional Commits    structure intent in change history
-Conventional Comments   structure intent in review feedback
-Agent Decision Comments structure intent in agent-written source code
-```
-
-ADCs apply the same basic discipline — a small vocabulary, predictable form,
-and human-readable meaning — to the decisions embedded in source code.
-
----
+Types constrain data/interfaces; tests check behavior; ADCs preserve decisions
+and constraints. They complement Conventional Commits (change history) and
+Conventional Comments (review feedback) with code-local intent.
 
 ## Editor highlighting
 
-In VS Code, you can use [TODO Highlight][todo-highlight] to highlight ADC labels.
-Add this setting to your user or workspace `settings.json`:
+In VS Code, add [TODO Highlight][todo-highlight] settings at user or workspace
+scope. For languages outside its default file patterns, such as Python and F#,
+also configure `todohighlight.include` for the source files.
 
 [todo-highlight]: https://marketplace.visualstudio.com/items?itemName=wayou.vscode-todo-highlight
 
 ```json
 {
   "todohighlight.keywords": [
-    {
-      "text": "decision:",
-      "color": "#c792ea",
-      "backgroundColor": "transparent"
-    },
-    {
-      "text": "assumption:",
-      "color": "#82aaff",
-      "backgroundColor": "transparent"
-    },
-    {
-      "text": "invariant:",
-      "color": "#ffcb6b",
-      "backgroundColor": "transparent"
-    },
-    {
-      "text": "tradeoff:",
-      "color": "#7fdbca",
-      "backgroundColor": "transparent"
-    }
+    { "text": "decision:", "color": "#c792ea", "backgroundColor": "transparent" },
+    { "text": "assumption:", "color": "#82aaff", "backgroundColor": "transparent" },
+    { "text": "invariant:", "color": "#ffcb6b", "backgroundColor": "transparent" },
+    { "text": "tradeoff:", "color": "#7fdbca", "backgroundColor": "transparent" },
+    { "text": "lean:", "color": "#f78c6c", "backgroundColor": "transparent" }
   ]
 }
 ```
-
-For languages outside the extension's default file patterns, such as Python or
-F#, also configure `todohighlight.include` to include your source files.
