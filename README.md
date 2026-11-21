@@ -518,9 +518,6 @@ constraint for reviewers, tools, and future agents.
 The [inline Lean example](examples/literate-lean/README.md) embeds compact formal
 specifications in Rust and F# comments and generates a checkable view of intent.
 
-The older [companion-file spike](examples/lean-spec/README.md) explores a separate
-Lean model. Its experimental `model:` label is not part of ADC 0.5.0.
-
 ---
 
 ## Versioning

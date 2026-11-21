@@ -28,8 +28,8 @@ declaration governed by that comment.
 There is no additional `model:` reference: it would repeat the local connection.
 The Lean name need not match the implementation name; `MapContract` describes
 what `map` must satisfy, rather than implementing it again.
-An explicit reference remains useful when a specification is defined elsewhere,
-including in the original companion-file example.
+When a specification is defined elsewhere, reference its qualified name and
+file in nearby prose.
 
 `decision:` preserves rationale; `lean:` supplies a precise definition.
 Both are ADC directives; formal specifications remain optional.

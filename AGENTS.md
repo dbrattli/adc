@@ -10,7 +10,7 @@ install it directly; other adopting repositories copy it to `ADC.md`. Agents
 read it on every task, so keep it short. Keep it consistent with the full
 specification: every rule and example it states must match `README.md`, and both
 files must carry the same specification version. `LICENSE` contains the MIT
-license. `examples/` contains runnable examples and historical spikes.
+license. `examples/` contains runnable inline Lean examples.
 `tools/` contains the Python extractor and its tests.
 Generated Lean views are disposable; do not commit them.
 Keep other documentation at the repository root unless a larger collection
