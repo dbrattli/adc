@@ -21,7 +21,8 @@ class LeanifyTests(unittest.TestCase):
         self.output = Path(self.directory.name) / "Example.lean"
 
     def leanify(self, text, check=False):
-        self.source.write_text(text, encoding="utf-8")
+        # decision: preserves fixture bytes so Windows cannot translate CRLF twice
+        self.source.write_bytes(text.encode("utf-8"))
         command = [
             sys.executable,
             str(HERE / "leanify.py"),
@@ -283,6 +284,8 @@ class LeanifyTests(unittest.TestCase):
         result = self.leanify("\ufeff// lean: `def α : Nat := 1`\r\n")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.output.read_text(), "def α : Nat := 1\n")
+        self.assertTrue(self.source.read_bytes().endswith(b"1`\r\n"))
+        self.assertNotIn(b"\r\r\n", self.source.read_bytes())
 
     def test_rust_inline_doc_comments(self):
         self.source = self.source.with_suffix(".rs")
