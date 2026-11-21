@@ -5,17 +5,12 @@ description: Apply Agent Decision Comments when changing or reviewing code in re
 
 # Agent Decision Comments
 
-> Preserve the why in agent-written, human-reviewed code.
+- Specification version: **0.5.0** — <https://github.com/dbrattli/adc>
+- Purpose: preserve durable engineering intent beside the code it governs.
+- Use ordinary comments, documentation comments, or docstrings; no runtime
+  dependency. All directives, including Lean, are optional.
 
-- Specification version: **0.5.0**
-- Full specification: <https://github.com/dbrattli/adc>
-
-Agent Decision Comments (ADCs) are concise, structured annotations that keep
-durable engineering decisions beside the code they govern. They use ordinary
-comments, documentation comments, or docstrings, and they require no runtime
-dependency.
-
-## The labels
+## Labels
 
 ```text
 decision:    A deliberate choice and the reason for it.
@@ -25,99 +20,68 @@ tradeoff:    A cost accepted in exchange for a benefit.
 lean:        A formal specification or supporting declaration written in Lean.
 ```
 
-Directives are optional. Add only those that capture non-obvious rationale.
 Start with `decision:` and `invariant:`. A caller obligation is a precondition,
 not an assumption.
 
-## Optional formal intent
+## When and how to write
 
-Use `lean:` for precise types or contracts when useful; Lean is not required to
-adopt ADC. `invariant:` states a human-readable property; `lean:` can formalize
-it or another contract without requiring a duplicate prose directive.
-Explain parameter correspondence and modeling limits in nearby prose.
-Use domain type names consistently; an adjacent definition needs no extra
-reference directive. `model:` and `ref:` are not ADC directives.
-
-A `lean:` line contains one Lean command, raw or inside one pair of Markdown
-backticks. Multiline declarations may use a fenced `lean` block inside a host
-comment. Keep relative Lean indentation. Supporting imports and namespaces
-share the extracted compilation unit in source order.
-
-Lean checking establishes well-formedness, not satisfiability, correct
-requirements, or host implementation conformance. Optional proofs establish
-model properties under their assumptions. Review those assumptions and the
-connection to the implementation; do not describe flipping as program proof.
-Use the adopted extractor's documented language/comment support.
-
-## Format
+Add ADCs for non-obvious algorithm, architecture, or data choices; ordering,
+consistency, concurrency, or lifecycle constraints; boundaries; external
+assumptions; accepted limitations; surprising behavior; and local consequences
+of RFCs/ADRs. Skip obvious mechanics, type-enforced facts, trivial refactoring,
+generic advice, speculation, and comments added only for coverage.
 
 ```text
 <label>: <statement> [— <reason or consequence>]
 ```
 
-- One directive per physical line, as concise as practical.
-  Use present tense for prose.
-- For prose, state only what is not already evident from code, types, or tests.
-- Prefer specific, falsifiable statements over general claims.
-- In a docstring or documentation comment, write normal prose first, leave a
-  blank line, then list the directives.
-- Use an ordinary comment when API documentation is not needed.
-- Update or remove a directive whenever its code or rationale changes.
-
-The em dash is a readability convention, not a parser delimiter.
+- Write one directive per physical line; repeated labels are allowed.
+- Keep prose concise, present-tense, specific, and falsifiable; do not restate
+  code, types, or tests. The em dash is optional formatting, not a delimiter.
+- Attach directives to the nearest governed construct. In documentation comments
+  or docstrings, put normal prose first, then a blank line and the directives.
+  Use ordinary comments when API documentation is unnecessary.
 
 ```python
-def process_events(queue, handle):
-    """
-    Deliver events from a deque to a synchronous handler in enqueue order.
-    The caller owns the deque exclusively until processing finishes.
-
-    decision: processes events on one consumer to preserve arrival order
-    decision: routes events through a queue to decouple producers from handler timing
-    invariant: handlers observe events in enqueue order
-    tradeoff: limits throughput to gain deterministic processing
-    """
-    while queue:
-        handle(queue.popleft())
+# decision: processes events on one consumer to preserve arrival order
+# invariant: handlers observe events in enqueue order
+# tradeoff: limits throughput to gain deterministic processing
+while queue:
+    handle(queue.popleft())
 ```
 
-## When to write one
+## Optional formal intent
 
-Write or update an ADC when a change:
+Use `lean:` for precise types or contracts. It can formalize an invariant or
+another contract without a duplicate prose directive. Explain parameter
+correspondence and modeling limits nearby; use consistent domain type names.
+An adjacent definition needs no extra reference. `model:` and `ref:` are not
+ADC directives.
 
-- chooses one meaningful algorithm, architecture, or data structure over
-  another;
-- introduces ordering, consistency, concurrency, or lifecycle constraints;
-- establishes a boundary that future code must not accidentally cross;
-- relies on an external condition that could prove false;
-- accepts a known limitation in return for a concrete benefit;
-- implements behavior a competent reviewer would reasonably question;
-- distills a relevant RFC or ADR decision at the point where it constrains code.
+Write one Lean command per `lean:` line, raw or inside one pair of Markdown
+backticks. Use fenced `lean` blocks inside host comments for multiline code;
+preserve relative indentation. Imports, namespaces, and declarations share one
+extracted compilation unit in source order. Follow the adopted extractor's
+language/comment support.
 
-Do not add one for mechanics that are clear from the implementation, facts
-enforced by the type system, trivial mechanical refactoring, generic advice,
-speculative reasoning, or every function merely for consistency.
+Lean checks well-formedness, not satisfiability, correct requirements, or host
+implementation conformance. Optional proofs establish model properties under
+assumptions. Review those assumptions and the implementation correspondence;
+never describe comment extraction as program proof.
 
-## Scope
+## Before changing code
 
-A directive governs the construct it is attached to and its nested constructs.
-Directives from enclosing scopes accumulate. A narrower directive may
-specialize a broader decision but never silently cancels an invariant. Before
-modifying code, collect the active directives from the file level down to the
-modified site. If active directives conflict, surface the conflict before
-changing the code.
+Read active ADCs from file scope down to the modified site. Each governs its
+attached construct and nested constructs; enclosing directives accumulate.
+Local decisions may specialize broader ones but never silently cancel an
+invariant. Surface conflicts before editing.
 
-## Existing comments are active constraints
+- Preserve `invariant:` properties or explicitly justify changes.
+- Preserve `lean:` contracts and parameter correspondence; explicitly review
+  semantic changes and rerun adopted Lean checks.
+- Do not silently reverse `decision:` choices.
+- Validate `assumption:` beliefs when the change depends on them.
+- Reconsider `tradeoff:` costs and benefits when either changes.
 
-Before modifying code, read the ADCs already governing it.
-
-- Preserve an `invariant:` or justify the change explicitly.
-- Preserve `lean:` contracts and parameter correspondence; review semantic
-  changes explicitly and rerun adopted Lean checks.
-- Do not silently reverse a `decision:`.
-- Validate an `assumption:` when the change depends on it.
-- Reconsider a `tradeoff:` when its cost or benefit changes.
-
-If a decision changes, update or remove the annotation in the same change and
-call it out in the review summary. An obsolete directive is worse than no
-directive: it creates false confidence for reviewers and future agents.
+Update or remove stale directives in the same change and report changed
+decisions in the review summary. Obsolete directives mislead future readers.
