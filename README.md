@@ -95,6 +95,10 @@ Adopting ADC does not require Lean or a verification toolchain.
 property, a precondition, or an input/output contract. Do not require duplicate
 prose directives; retain domain meaning, parameter correspondence, and rationale.
 A predicate defines a requirement, not evidence that the implementation meets it.
+Generate compact `lean:` lines by default, not fenced code blocks. Prefer
+predicates describing allowed inputs, outputs, or state transitions; do not add
+proofs or duplicate implementation algorithms unless requested. Keep parameter
+correspondence and modeling limits brief.
 
 ```fsharp
 /// Transform each item, preserving its position on successful return.
@@ -113,9 +117,10 @@ let map f items = List.map f items
   `ref:` are not ADC directives.
 - Write one Lean command per `lean:` line, raw or inside one pair of Markdown
   backticks. Remove the backticks before checking.
-- For multiline code or code containing backticks, use a fenced `lean` block in
-  a host comment. This is a continuation format, not another directive. Remove
-  host prefixes/indentation while preserving relative Lean indentation.
+- Use fenced `lean` blocks only for explicitly requested multiline
+  specifications, in a host comment form supported by the adopted extractor.
+  This is a continuation format, not another directive. Remove host prefixes
+  and indentation while preserving relative Lean indentation.
 - Extract commands into one compilation unit in source order. Imports,
   namespaces, and `end` establish context, not host implementation guarantees.
 

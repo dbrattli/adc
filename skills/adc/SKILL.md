@@ -58,11 +58,19 @@ correspondence and modeling limits nearby; use consistent domain type names.
 An adjacent definition needs no extra reference. `model:` and `ref:` are not
 ADC directives.
 
-Write one Lean command per `lean:` line, raw or inside one pair of Markdown
-backticks. Use fenced `lean` blocks inside host comments for multiline code;
-preserve relative indentation. Imports, namespaces, and declarations share one
-extracted compilation unit in source order. Follow the adopted extractor's
-language/comment support.
+Generate compact `lean:` lines by default, not fenced code blocks.
+Prefer predicates describing allowed inputs, outputs, or state transitions;
+do not add proofs or duplicate implementation algorithms unless requested.
+Keep parameter correspondence and modeling limits brief.
+
+```rust
+// lean: `def MapContract (f : α → β) (xs : List α) (ys : List β) : Prop := ys = xs.map f`
+```
+
+Write one Lean command per line, raw or inside one pair of Markdown backticks.
+Use fenced blocks only for explicitly requested multiline specifications, with
+syntax supported by the adopted extractor; preserve relative indentation.
+Imports, namespaces, and declarations share one compilation unit in source order.
 
 Lean checks well-formedness, not satisfiability, correct requirements, or host
 implementation conformance. Optional proofs establish model properties under
