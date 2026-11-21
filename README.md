@@ -91,6 +91,8 @@ tradeoff: performs an O(n) copy per update to enable time-travel debugging
 
 Use Lean types, predicates, or supporting declarations to make intent precise.
 Adopting ADC does not require Lean or a verification toolchain.
+A model represents program values and states; a contract defines their allowed
+relationships.
 `invariant:` states a human-readable property; `lean:` can formalize that
 property, a precondition, or an input/output contract. Do not require duplicate
 prose directives; retain domain meaning, parameter correspondence, and rationale.
@@ -123,6 +125,11 @@ let map f items = List.map f items
   and indentation while preserving relative Lean indentation.
 - Extract commands into one compilation unit in source order. Imports,
   namespaces, and `end` establish context, not host implementation guarantees.
+
+Use formal contracts as behavioral targets during refactoring and porting.
+Review model correspondence explicitly; omitted behavior is not permission to
+change it. Preserve API and compatibility obligations, and surface conflicts
+between contracts, documentation, tests, and implementation before editing.
 
 #### Checking formal intent
 

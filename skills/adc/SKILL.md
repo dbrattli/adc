@@ -57,6 +57,8 @@ another contract without a duplicate prose directive. Explain parameter
 correspondence and modeling limits nearby; use consistent domain type names.
 An adjacent definition needs no extra reference. `model:` and `ref:` are not
 ADC directives.
+A model represents program values and states; a contract defines their allowed
+relationships.
 
 Generate compact `lean:` lines by default, not fenced code blocks.
 Prefer predicates describing allowed inputs, outputs, or state transitions;
@@ -76,6 +78,11 @@ Lean checks well-formedness, not satisfiability, correct requirements, or host
 implementation conformance. Optional proofs establish model properties under
 assumptions. Review those assumptions and the implementation correspondence;
 never describe comment extraction as program proof.
+
+Use formal contracts as behavioral targets during refactoring and porting.
+Review model correspondence explicitly; omitted behavior is not permission to
+change it. Preserve API and compatibility obligations, and surface conflicts
+between contracts, documentation, tests, and implementation before editing.
 
 ## Before changing code
 
