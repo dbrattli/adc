@@ -1,4 +1,4 @@
-name: Documentation checks
+name: Specification and tool checks
 
 on: [push, pull_request]
 
@@ -17,3 +17,17 @@ jobs:
         with:
           config: .markdownlint.jsonc
           globs: "**/*.md"
+
+  leanify:
+    name: Leanify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test extraction with runner Python
+        run: python -B -m unittest discover -s tools -v

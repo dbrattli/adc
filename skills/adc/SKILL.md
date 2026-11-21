@@ -7,7 +7,7 @@ description: Apply Agent Decision Comments when changing or reviewing code in re
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.4.1**
+- Specification version: **0.5.0**
 - Full specification: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep
@@ -15,18 +15,39 @@ durable engineering decisions beside the code they govern. They use ordinary
 comments, documentation comments, or docstrings, and they require no runtime
 dependency.
 
-## The four labels
+## The labels
 
 ```text
 decision:    A deliberate choice and the reason for it.
 invariant:   A falsifiable property that the code must preserve.
 assumption:  An external belief that this code does not guarantee.
 tradeoff:    A cost accepted in exchange for a benefit.
+lean:        A formal specification or supporting declaration written in Lean.
 ```
 
 Directives are optional. Add only those that capture non-obvious rationale.
 Start with `decision:` and `invariant:`. A caller obligation is a precondition,
 not an assumption.
+
+## Optional formal intent
+
+Use `lean:` for precise types or contracts when useful; Lean is not required to
+adopt ADC. `invariant:` states a human-readable property; `lean:` can formalize
+it or another contract without requiring a duplicate prose directive.
+Explain parameter correspondence and modeling limits in nearby prose.
+Use domain type names consistently; an adjacent definition needs no extra
+reference directive. `model:` and `ref:` are not ADC directives.
+
+A `lean:` line contains one Lean command, raw or inside one pair of Markdown
+backticks. Multiline declarations may use a fenced `lean` block inside a host
+comment. Keep relative Lean indentation. Supporting imports and namespaces
+share the extracted compilation unit in source order.
+
+Lean checking establishes well-formedness, not satisfiability, correct
+requirements, or host implementation conformance. Optional proofs establish
+model properties under their assumptions. Review those assumptions and the
+connection to the implementation; do not describe flipping as program proof.
+Use the adopted extractor's documented language/comment support.
 
 ## Format
 
@@ -34,9 +55,9 @@ not an assumption.
 <label>: <statement> [— <reason or consequence>]
 ```
 
-- One directive per physical line, in present tense and as concise as
-  practical.
-- State only what is not already evident from code, types, or tests.
+- One directive per physical line, as concise as practical.
+  Use present tense for prose.
+- For prose, state only what is not already evident from code, types, or tests.
 - Prefer specific, falsifiable statements over general claims.
 - In a docstring or documentation comment, write normal prose first, leave a
   blank line, then list the directives.
@@ -91,6 +112,8 @@ changing the code.
 Before modifying code, read the ADCs already governing it.
 
 - Preserve an `invariant:` or justify the change explicitly.
+- Preserve `lean:` contracts and parameter correspondence; review semantic
+  changes explicitly and rerun adopted Lean checks.
 - Do not silently reverse a `decision:`.
 - Validate an `assumption:` when the change depends on it.
 - Reconsider a `tradeoff:` when its cost or benefit changes.

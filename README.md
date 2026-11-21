@@ -2,7 +2,7 @@
 
 > Preserve the why in agent-written, human-reviewed code.
 
-- Specification version: **0.4.1**
+- Specification version: **0.5.0**
 - Canonical repository: <https://github.com/dbrattli/adc>
 
 Agent Decision Comments (ADCs) are concise, structured annotations that keep durable
@@ -84,17 +84,18 @@ describe.
 
 ## The vocabulary
 
-ADCs define four labels:
+ADCs define four prose labels and one optional formal label:
 
 ```text
 decision:    A deliberate choice and the reason for it.
 invariant:   A falsifiable property that the code must preserve.
 assumption:  An external belief that this code does not guarantee.
 tradeoff:    A cost accepted in exchange for a benefit.
+lean:        A formal specification or supporting declaration written in Lean.
 ```
 
 Directives are optional. Add only the directives that capture non-obvious
-rationale for the construct; you do not need to use all four, or any directive
+rationale for the construct; you do not need to use all labels, or any directive
 at all.
 
 Start with `decision:` and `invariant:`. Add `assumption:` or `tradeoff:` when
@@ -139,6 +140,75 @@ Records both the accepted cost and the resulting benefit.
 tradeoff: performs an O(n) copy per update to enable time-travel debugging
 ```
 
+### `lean:`
+
+Records formal intent as Lean code: a type, predicate, or supporting declaration.
+Use it when a precise specification helps reviewers distinguish correct behavior
+from plausible but incorrect implementations.
+It is optional; adopting ADC does not require Lean or a verification toolchain.
+
+`invariant:` states a property in human-readable prose; `lean:` can formalize that
+property, a precondition, or an input/output contract.
+A Lean predicate definition describes a requirement; it does not prove the
+requirement holds for the implementation.
+Do not duplicate every formal contract with an `invariant:` paraphrase.
+Keep prose that explains domain meaning, parameter correspondence, and rationale.
+
+```fsharp
+/// Transform each item, preserving its position on successful return.
+/// f models the callback; xs and ys model the input and output sequences.
+///
+/// decision: specifies elementwise correspondence because equal counts permit incorrect results
+/// lean: `def MapContract (f : α → β) (xs : List α) (ys : List β) : Prop := ys = xs.map f`
+let map f items = List.map f items
+```
+
+Use the same names for domain types where practical.
+Contract names may differ from implementation names, such as `MapContract` for
+`map`. Describe the correspondence in nearby prose; matching names and adjacency
+are review aids, not a mechanically verified connection.
+An adjacent definition needs no additional reference directive.
+For a separate model, reference its qualified Lean name and file in prose or an
+`invariant:`; `model:` and `ref:` are not ADC directives.
+
+Write one Lean command per `lean:` line, either raw or enclosed in one pair of
+backticks. Backticks are Markdown formatting, removed before Lean checking.
+Supporting commands such as `import`, `namespace`, and `end` establish shared
+context; they do not assert requirements about the host implementation.
+All extracted commands share one compilation unit in source order.
+Use a fenced `lean` block inside a host comment for multiline declarations or
+code containing backticks. The fence is a continuation format for formal intent,
+not another directive. Preserve Lean's relative indentation when removing the
+host comment prefix and indentation.
+
+#### Checking formal intent
+
+[tools/leanify.py](tools/leanify.py) produces a Lean view with host code and ADCs
+retained as comments. Its optional `--check` runs Lean and maps diagnostics to
+the source.
+See [tool usage and supported syntax](tools/README.md) and the
+[inline example](examples/literate-lean/README.md).
+The convention is language-independent; individual extractors must document
+which host languages and comment forms they support.
+
+Distinguish three levels of evidence:
+
+- **Well-formed specification:** Lean resolves names and checks types and
+  propositions. This alone does not establish satisfiability or correct intent.
+- **Proven model properties:** optional theorems establish consequences of the
+  definitions, under their stated assumptions. Existence proofs can demonstrate
+  that a contract admits results; a predicate definition alone cannot.
+- **Implementation conformance:** requires a verified connection to the host
+  program and separate evidence. Flipping comments does not establish it.
+
+Human review still determines whether the model captures the requirements.
+State modeling limits such as callback effects, exceptions, mutation, and integer
+semantics. Review tests against the same contracts.
+When including proofs, review their assumptions and dependencies; compilation
+alone does not establish that an axiom is justified or that a proof is complete.
+The bundled checker treats warnings, including ordinary `sorry` warnings, as
+errors; it is not a proof-trust auditor.
+
 ---
 
 ## Format
@@ -151,13 +221,14 @@ Use this general form:
 
 Each directive line contains one directive and one statement. When an
 annotation contains multiple decisions, invariants, assumptions, or
-tradeoffs, write each as a separate directive line. Repeating the same
-directive label is allowed.
+tradeoffs, write each as a separate directive line.
+A `lean:` line contains Lean code rather than a prose statement.
+Repeating the same directive label is allowed.
 
 Follow these rules:
 
 - Write one directive per physical line.
-- Use present tense: `uses a fold`, not `was changed to use a fold`.
+- Use present tense for prose: `uses a fold`, not `was changed to use a fold`.
 - Keep directives concise and within the repository's normal line length when
   practical.
 - Place directives in the nearest comment or docstring attached to the code
@@ -350,6 +421,8 @@ Before modifying code, read the ADCs already governing it.
 - Do not silently reverse a `decision:`.
 - Validate an `assumption:` when the change depends on it.
 - Reconsider a `tradeoff:` when its cost or benefit changes.
+- Preserve formal contracts in `lean:`; review changes to their meaning and
+  parameter correspondence, and rerun the adopted Lean checks.
 
 Annotations are not immutable historical artifacts. They describe the current
 rationale. If a decision changes, update or remove the annotation in the same
@@ -394,7 +467,8 @@ ADCs make intent reviewable before implementation details. A reviewer can:
 3. Check that every invariant is upheld.
 4. Probe assumptions against their external context.
 5. Decide whether each tradeoff remains acceptable.
-6. Review the implementation and tests against that stated intent.
+6. Check formal contracts, their parameter correspondence, and any model proofs.
+7. Review the implementation and tests against that stated intent.
 
 The comments improve code review; they do not replace implementation review.
 
@@ -436,6 +510,16 @@ def flatten_sections(sections):
 
 The prose explains the journey. The directives preserve the decision and its
 constraint for reviewers, tools, and future agents.
+
+---
+
+## Examples
+
+The [inline Lean example](examples/literate-lean/README.md) embeds compact formal
+specifications in Rust and F# comments and generates a checkable view of intent.
+
+The older [companion-file spike](examples/lean-spec/README.md) explores a separate
+Lean model. Its experimental `model:` label is not part of ADC 0.5.0.
 
 ---
 
@@ -508,6 +592,11 @@ Add this setting to your user or workspace `settings.json`:
     {
       "text": "tradeoff:",
       "color": "#7fdbca",
+      "backgroundColor": "transparent"
+    },
+    {
+      "text": "lean:",
+      "color": "#f78c6c",
       "backgroundColor": "transparent"
     }
   ]
